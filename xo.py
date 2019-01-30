@@ -232,7 +232,7 @@ class NonEmptyFilter(Filter):
     """Ensures that tokens have len > 0."""
     def filter(self, lexer, stream):
         for ttype, value in stream:
-            if len(value) > 0:
+            if value:
                 yield ttype, value
 
 
@@ -336,10 +336,8 @@ class DequeEditor(urwid.Edit):
 class QueryEditor(DequeEditor):
     """Sets a (compiled) regular expression on the main body."""
     def run(self, main_display):
-        try:
-            q = re.compile(self.get_edit_text())
-        except re.error:
-            return "re fail "
+        try: q = re.compile(self.get_edit_text())
+        except re.error: return "re fail "
         main_display.queries.append(q)
         return main_display.seek_match()
 
@@ -459,11 +457,9 @@ class LineWalker(urwid.ListWalker):
         self._modified()
         self.main_display.reset_status()
 
-    def get_next(self, start_from):
-        return self._get_at_pos(start_from + 1)
+    def get_next(self, start_from): return self._get_at_pos(start_from + 1)
 
-    def get_prev(self, start_from):
-        return self._get_at_pos(start_from - 1)
+    def get_prev(self, start_from): return self._get_at_pos(start_from - 1)
 
     def read_next_line(self):
         """Read another line from the file."""
@@ -493,11 +489,9 @@ class LineWalker(urwid.ListWalker):
     def _ensure_read_in(self, lineno):
         next_line = ""
         n = 0
-        while (
-            (lineno >= len(self.lines))
-            and (next_line is not None)
-            and (self.file is not None)
-        ):
+        while ((lineno >= len(self.lines))
+                and (next_line is not None)
+                and (self.file is not None)):
             next_line = self.read_next_line()
             n += 1
         if n >= 2:
@@ -694,7 +688,7 @@ class LineWalker(urwid.ListWalker):
         rawlines.reverse()
 
 
-class MainDisplay(object):
+class MainDisplay():
     base_palette = [('body', 'default', 'default'),
                     ('foot', 'black', 'dark blue', 'bold'),
                     ('key', 'black', 'dark magenta', 'underline'), ]
@@ -746,8 +740,7 @@ class MainDisplay(object):
             if name.endswith(tab[0]):
                 self.tabsize, self.must_retab = tab[1]
                 break
-        else:
-            self.tabsize, self.must_retab = self.rc["tabs"]["default"]
+        else: self.tabsize, self.must_retab = self.rc["tabs"]["default"]
 
     def set_keybindings(self):
         self.keybindings = self.rc["keybindings"]
@@ -798,16 +791,14 @@ class MainDisplay(object):
         )
         loop.screen.set_terminal_properties(256)
         self.loop = loop
-        self.register_palette(pygments_cache.get_style_by_name(self.rc["style"]))
+        self.register_palette(
+            pygments_cache.get_style_by_name(self.rc["style"]))
         self.walker.goto(line, col)
         self.walker.all_tokens = None
         while True:
-            try:
-                self.loop.run()
-            except KeyboardInterrupt:
-                self.reset_status(status="YOLO!   ")
-            else:
-                break
+            try: self.loop.run()
+            except KeyboardInterrupt: self.reset_status(status="YOLO!   ")
+            else: break
 
     def seek_match(self):
         """Finds and jumps to the next match for the current query."""
@@ -827,7 +818,8 @@ class MainDisplay(object):
         elif not self.replacements:
             stat = "no sub  "
         else:
-            stat = self.walker.replace_match(self.queries[-1], self.replacements[-1])
+            stat = self.walker.replace_match(self.queries[-1],
+                                             self.replacements[-1])
         return stat
 
     def load_file(self, fname):
@@ -895,10 +887,8 @@ class MainDisplay(object):
             w, _ = self.walker.get_focus()
             xpos = w.edit_pos
             re_word = RE_WORD if k == "ctrl left" else RE_NOT_WORD
-            starts = [
-                m.start()
-                for m in re_word.finditer(w.edit_text or "", 0, xpos)
-            ]
+            starts = [m.start()
+                      for m in re_word.finditer(w.edit_text or "", 0, xpos)]
             word_pos = xpos if not starts else starts[-1]
             w.set_edit_pos(word_pos)
         elif k in ("ctrl right", "meta right"):
@@ -911,8 +901,8 @@ class MainDisplay(object):
         elif k == keybindings["jump"]:
             curr_footer = self.view.contents["footer"][0]
             if curr_footer is self.status:
-                self.view.contents["footer"] = (
-                    urwid.AttrMap(GotoEditor("line & col: ", ""), "foot"), None)
+                self.view.contents["footer"] = (urwid.AttrMap(
+                    GotoEditor("line & col: ", ""), "foot"), None)
                 self.view.focus_position = "footer"
         elif k == keybindings["find"]:
             curr_footer = self.view.contents["footer"][0]
@@ -932,14 +922,11 @@ class MainDisplay(object):
                 self.view.contents["footer"] = (self.status, None)
                 curr_footer = self.status
             if curr_footer is self.status:
-                self.view.contents["footer"] = (
-                    urwid.AttrMap(
-                        ReplacementEditor(caption="sub: ", edit_text="",
-                                          deq=self.replacements),
-                        "foot"
-                    ),
-                    None
-                )
+                self.view.contents["footer"] = (urwid.AttrMap(
+                    ReplacementEditor(caption="sub: ", edit_text="",
+                                      deq=self.replacements),
+                    "foot"
+                ), None)
                 self.view.focus_position = "footer"
         elif k == keybindings["replace_next"]:
             w = self.view.contents["footer"][0].original_widget
@@ -953,26 +940,27 @@ class MainDisplay(object):
             if curr_footer is self.status:
                 cap = "known available styles: {0}\nchoose one: "
                 cap = cap.format(" ".join(sorted(get_all_styles())))
-                self.view.contents["footer"] = (
-                    urwid.AttrMap(
-                        StyleSelectorEditor(caption=cap, edit_text=""),
-                        "foot"
-                    ),
-                    None
-                )
+                self.view.contents["footer"] = (urwid.AttrMap(
+                    StyleSelectorEditor(caption=cap, edit_text=""),
+                    "foot"
+                ), None)
                 self.view.focus_position = "footer"
         elif k == keybindings["insert"]:
             curr_footer = self.view.contents["footer"][0]
             if curr_footer is self.status:
-                self.view.contents["footer"] = (urwid.AttrMap(FileSelectorEditor(
-                    caption="read in file: ", edit_text=""), "foot"), None)
+                self.view.contents["footer"] = (urwid.AttrMap(
+                    FileSelectorEditor(caption="read in file: ",
+                                       edit_text=""),
+                    "foot"
+                ), None)
                 self.view.focus_position = "footer"
         elif k == "esc":
             curr_footer = self.view.contents["footer"][0]
             if curr_footer is self.status:
-                self.view.contents["footer"] = (
-                    urwid.AttrMap(urwid.Text(__doc__.format(**self.keybindings)),
-                    "foot"), None)
+                self.view.contents["footer"] = (urwid.AttrMap(
+                    urwid.Text(__doc__.format(**self.keybindings)),
+                    "foot"
+                ), None)
                 self.view.focus_position = "footer"
             else:
                 self.view.contents["footer"] = (self.status, None)
